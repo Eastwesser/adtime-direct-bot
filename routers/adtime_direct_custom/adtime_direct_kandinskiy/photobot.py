@@ -39,7 +39,6 @@ dp = Dispatcher()
 router = Router(name=__name__)
 
 
-
 class InputFileBytes(InputFile):
     def __init__(self, file_data: bytes, filename: str):
         """
@@ -119,34 +118,6 @@ class Text2ImageAPI:
             print(f"Error getting pipeline: {str(e)}")
             return None
 
-    # def get_model(self):
-    #     response = requests.get(
-    #         self.URL + 'key/api/v1/models', headers=self.AUTH_HEADERS
-    #     )
-    #     data = response.json()
-    #     return data[0]['id']
-    #
-    # def generate(self, prompt, model, images=1, width=1024, height=1024):
-    #     params = {
-    #         "type": "GENERATE",
-    #         "numImages": images,
-    #         "width": width,
-    #         "height": height,
-    #         "generateParams": {
-    #             "query": f"{prompt}"
-    #         }
-    #     }
-    #
-    #     data = {
-    #         'model_id': (None, model),
-    #         'params': (None, json.dumps(params), 'application/json')
-    #     }
-    #     response = requests.post(
-    #         self.URL + 'key/api/v1/text2image/run', headers=self.AUTH_HEADERS, files=data
-    #     )
-    #     data = response.json()
-    #     return data['uuid']
-
     def generate(self, prompt, pipeline, images=1, width=1024, height=1024):
         params = {
             "type": "GENERATE",
@@ -201,19 +172,6 @@ class Text2ImageAPI:
         return None
 
 
-    # def check_generation(self, request_id, attempts=10, delay=10):
-    #     while attempts > 0:
-    #         response = requests.get(
-    #             self.URL + 'key/api/v1/text2image/status/' + request_id, headers=self.AUTH_HEADERS
-    #         )
-    #         data = response.json()
-    #         if data['status'] == 'DONE':
-    #             return data['images']
-    #
-    #         attempts -= 1
-    #         time.sleep(delay)
-
-
 @router.message(F.text == ButtonText.KANDINSKY)
 async def handle_kandinskiy_message(message: types.Message):
     await message.answer(
@@ -241,39 +199,6 @@ async def handle_text_to_image(message: Message, state: FSMContext):
                          "It may take some time, almost 30-40 seconds, so be patient UwU")
     await state.set_state(KandinskyStates.TextToImage)
 
-#
-# @router.message(KandinskyStates.TextToImage)
-# async def process_text_for_image(message: types.Message, state: FSMContext):
-#     await state.set_state(KandinskyStates.TextToImage)
-#     text = message.text
-#     api = Text2ImageAPI(
-#         "https://api-key.fusionbrain.ai/",
-#         f"{fusion_brain_token}",
-#         f"{fusion_brain_key}"
-#     )
-#     model_id = api.get_model()
-#     if model_id:
-#         print(f"Model ID: {model_id}")
-#         uuid = api.generate(text, model_id)
-#         print(f"Image UUID: {uuid}")
-#         images = api.check_generation(uuid)
-#
-#         if images:
-#             print(f"Images: {images}")
-#
-#             image_base64 = images[0]
-#             image_data = base64.b64decode(image_base64)
-#
-#             buffered_input_file = types.input_file.BufferedInputFile(file=image_data, filename="image.jpg")
-#
-#             await message.answer_photo(buffered_input_file)
-#
-#         else:
-#             await message.answer("Error generating image. Please try again later, sorry TwT")
-#     else:
-#         await message.answer("Error fetching model ID. Please try again later, sorry TwT")
-#
-#     await state.clear()
 
 @router.message(KandinskyStates.TextToImage)
 async def process_text_for_image(message: types.Message, state: FSMContext):
