@@ -1,15 +1,13 @@
 import asyncio
 import logging
-import psutil
 
+import psutil
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from config import settings
 from routers import router as main_router
-
-print(settings.fusion_brain_token, settings.fb_key)
 
 logging.basicConfig(
     level=logging.INFO,
