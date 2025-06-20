@@ -1,4 +1,4 @@
-# AdTime Direct(tg bot)
+# AdTime Direct (tg bot)
 
 Use our Telegram bot to create orders for leather accessories, vinyl stickers, and gift cards!
 
