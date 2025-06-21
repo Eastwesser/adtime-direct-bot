@@ -26,6 +26,7 @@ from aiogram.types import (
 from dotenv import load_dotenv
 
 from keyboards.on_start import ButtonText
+from routers.common.states import MainStates
 
 bot_token = os.getenv('BOT_TOKEN')
 fusion_brain_token = os.getenv('FUSION_BRAIN_TOKEN')
@@ -66,6 +67,7 @@ class AIfilters(StatesGroup):
 
 # KANDINSKIY ===========================================================================================================
 class KandinskyStates(StatesGroup):
+    ReviewImage = State()
     Intro = State()
     TextToImage = State()
 
@@ -237,3 +239,25 @@ async def process_text_for_image(message: types.Message, state: FSMContext):
         await message.answer("⚠️ Ошибка отправки изображения.")
 
     await state.clear()
+
+    # После успешной генерации
+    markup = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Отправить администратору")],
+            [KeyboardButton(text="Сгенерировать заново")],
+            [KeyboardButton(text="Назад")]
+        ],
+        resize_keyboard=True
+    )
+    await message.answer(
+        "Нравится результат?",
+        reply_markup=markup
+    )
+    await state.set_state(KandinskyStates.ReviewImage)
+
+
+@router.message(F.text == "Отправить администратору", KandinskyStates.ReviewImage)
+async def send_to_admin(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    # Отправляем админам изображение + информацию
+    await state.set_state(MainStates.main_menu)

@@ -8,6 +8,7 @@ from aiogram.enums import ParseMode
 
 from config import settings
 from routers import router as main_router
+from routers.middlewares.user_logging import UserLoggingMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +26,7 @@ def log_memory_usage():
 async def main():
     dp = Dispatcher()
     dp.include_router(main_router)
+    dp.update.middleware(UserLoggingMiddleware())
     bot = Bot(
         token=settings.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)

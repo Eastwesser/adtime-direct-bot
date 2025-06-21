@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     fusion_brain_token: str = os.getenv('FUSION_BRAIN_TOKEN')
     fb_key: str = os.getenv('FB_KEY')
     admin_ids: frozenset[int] = frozenset({42, 5756911009})
+    webhook_domain: str = os.getenv('WEBHOOK_DOMAIN')
+    webhook_host: str = os.getenv('WEBHOOK_HOST', '0.0.0.0')
+    webhook_port: int = int(os.getenv('WEBHOOK_PORT', 8443))
+    ssl_cert_path: str = os.getenv('SSL_CERT_PATH')
+    ssl_key_path: str = os.getenv('SSL_KEY_PATH')
 
 
 settings = Settings()
