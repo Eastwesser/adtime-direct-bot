@@ -1,30 +1,23 @@
-import os
+import logging
 
 from aiogram import Router, types
-from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
-from aiogram.utils import markdown
-from dotenv import load_dotenv
+from aiogram.fsm.context import FSMContext
 
-from keyboards.on_start import (
-    get_on_start_kb,
-)
+from keyboards.on_start import get_on_start_kb
+from routers.common.states import MainStates
 
-bot_token = os.getenv('BOT_TOKEN')
-
-load_dotenv()
-
+logger = logging.getLogger(__name__)
 router = Router(name=__name__)
 
 
 @router.message(CommandStart())
-async def handle_start(message: types.Message):
-    welcome_sticker_id = "CAACAgIAAxkBAg_ve2hVrnrix_zqwZ0hFwOa_PIpI5o4AAKXeQACdWSwSoZqs8snryMWNgQ"
-    await message.answer_sticker(sticker=welcome_sticker_id)
-
+async def handle_start(message: types.Message, state: FSMContext):
+    logger.info("CommandStart received")
+    await state.set_state(MainStates.main_menu)
+    logger.info(f"State set to: {await state.get_state()}")
+    await message.answer_sticker("CAACAgIAAxkBAg_ve2hVrnrix_zqwZ0hFwOa_PIpI5o4AAKXeQACdWSwSoZqs8snryMWNgQ")
     await message.answer(
-        text=f"{markdown.hide_link(welcome_sticker_id)}Привет, я - AdTime Direct Bot!\n"
-             f"Что бы вы хотели заказать?",
-        parse_mode=ParseMode.HTML,
+        text="Привет, я - AdTime Direct Bot!\nЧто бы вы хотели заказать?",
         reply_markup=get_on_start_kb(),
     )

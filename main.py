@@ -1,15 +1,18 @@
 import asyncio
 import logging
-
+import sys
+from pathlib import Path
 import psutil
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from pydantic import types
 
 from config import settings
 from routers import main_router
 from routers.middlewares.user_logging import UserLoggingMiddleware
+
+# Добавляем корень проекта в PYTHONPATH
+sys.path.append(str(Path(__file__).parent))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,9 +40,6 @@ async def main():
     await dp.start_polling(bot)
     log_memory_usage()
 
-@dp.update()
-async def log_unhandled(update: types.Update):
-    logger.warning(f"Unhandled update: {update}")
 
 if __name__ == '__main__':
     try:

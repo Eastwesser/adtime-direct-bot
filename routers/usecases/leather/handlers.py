@@ -1,17 +1,29 @@
+import logging
+
 from aiogram import Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from keyboards.on_start import ButtonText
-from .keyboards import get_leather_kb
 from routers.common.states import MainStates
 from routers.services.tickets import generate_ticket_number
+from .keyboards import get_leather_kb
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
-@router.message(F.text == ButtonText.LEATHER, MainStates.main_menu)
+@router.message(StateFilter(MainStates.main_menu), F.text == ButtonText.LEATHER)
 async def handle_leather(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    logger.info(f"LEATHER pressed. Current state: {current_state}")
+
+    if current_state != MainStates.main_menu:
+        await message.answer("Пожалуйста, вернитесь в главное меню (/start)")
+        return
+
+    logger.info(f"Handling leather button, current state: {await state.get_state()}")
     await state.set_state(MainStates.leather)
     await message.answer(
         text="Какие изделия из кожи вы бы хотели заказать? Можете прислать фото или описать текстом.\n"

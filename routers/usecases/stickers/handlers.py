@@ -1,17 +1,29 @@
+import logging
+
 from aiogram import Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from keyboards.on_start import ButtonText
-from .keyboards import get_stickers_kb
 from routers.common.states import MainStates
 from routers.services.tickets import generate_ticket_number
+from .keyboards import get_stickers_kb
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
-@router.message(F.text == ButtonText.STICKERS, MainStates.main_menu)
+@router.message(StateFilter(MainStates.main_menu), F.text == ButtonText.STICKERS)
 async def handle_stickers(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    logger.info(f"STICKERS pressed. Current state: {current_state}")
+
+    if current_state != MainStates.main_menu:
+        await message.answer("Пожалуйста, вернитесь в главное меню (/start)")
+        return
+
+    logger.info(f"Handling stickers button, current state: {await state.get_state()}")
     await state.set_state(MainStates.stickers)
     await message.answer(
         text="Какие наклейки вы бы хотели заказать? Можете прислать фото или описать текстом.\n"
