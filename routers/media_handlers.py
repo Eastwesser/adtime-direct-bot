@@ -18,25 +18,33 @@ async def handle_photo_with_caption(message: Message, state: FSMContext, bot: Bo
     # Генерируем номер заявки
     ticket_number = generate_ticket_number()
 
+    # Формируем информацию о пользователе
+    username = f"@{message.from_user.username}" if message.from_user.username else f"ID: {message.from_user.id}"
+    admin_caption = (
+        f"📸 Новый заказ с фото!\n"
+        f"Номер: {ticket_number}\n"
+        f"Описание: {caption}\n"
+        f"От: {username}"
+    )
+
     # Отправляем админам
     for admin_id in settings.admin_ids:
         try:
             await bot.send_photo(
                 admin_id,
                 photo.file_id,
-                caption=f"📸 Новый заказ с фото!\n"
-                        f"Номер: {ticket_number}\n"
-                        f"Описание: {caption}\n"
-                        f"От: @{message.from_user.username}"
+                caption=admin_caption
             )
         except Exception as e:
-            print(f"Error sending to admin: {e}")
+            print(f"Error sending to admin {admin_id}: {e}")
 
     # Ответ пользователю
+    from keyboards.on_start import get_on_start_kb
     await message.answer(
-        f"✅ Фото с описанием принято!\n"
-        f"Номер заявки: {ticket_number}"
+        f"✅ Фото с описанием принято!\nНомер заявки: {ticket_number}",
+        reply_markup=get_on_start_kb()
     )
 
     # Возвращаем в главное меню
+    await state.clear()
     await state.set_state(MainStates.main_menu)

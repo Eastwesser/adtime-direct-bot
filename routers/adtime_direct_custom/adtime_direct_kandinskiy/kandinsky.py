@@ -161,6 +161,9 @@ async def request_prompt(message: Message, state: FSMContext):
 
 @router.message(KandinskyStates.TextToImage)
 async def generate_image(message: Message, state: FSMContext):
+    # Игнорируем текст кнопок
+    if message.text in ["Назад", "Сгенерировать заново", "Отправить администратору"]:
+        return
     # Если нажата кнопка "Назад" - выходим
     if message.text == "Назад":
         await state.clear()
@@ -222,19 +225,57 @@ async def regenerate_image(message: Message, state: FSMContext):
     data = await state.get_data()
     prompt = data.get("prompt", "")
 
-    if prompt:
+    if not prompt:
         await message.answer(
-            f"Повторная генерация для: '{prompt}'",
+            "Не удалось найти предыдущий запрос. Пожалуйста, введите новый:",
             reply_markup=ReplyKeyboardRemove()
         )
         await state.set_state(KandinskyStates.TextToImage)
-        await generate_image(message, state)
-    else:
-        await message.answer(
-            "Пожалуйста, введите новое описание для генерации:",
-            reply_markup=ReplyKeyboardRemove()
+        return
+
+    # Уведомляем пользователя о повторной генерации
+    await message.answer(
+        f"🔄 Повторная генерация для: '{prompt}'",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+    # Генерируем изображение напрямую, без создания фейкового сообщения
+    api = Text2ImageAPI(FUSION_BRAIN_TOKEN, FB_KEY)
+    pipeline_id = api.get_pipeline()
+    if not pipeline_id:
+        await message.answer("⚠️ Ошибка: не удалось получить pipeline.")
+        return
+
+    task_id = api.generate(prompt, pipeline_id)
+    if not task_id:
+        await message.answer("⚠️ Ошибка: не удалось начать генерацию.")
+        return
+
+    image_base64 = api.check_status(task_id)
+    if not image_base64:
+        await message.answer("⚠️ Ошибка: генерация изображения не удалась.")
+        return
+
+    try:
+        image_data = base64.b64decode(image_base64)
+        await message.answer_photo(
+            BufferedInputFile(image_data, "generated_image.jpg"),
+            caption=f"Результат для: '{prompt}'"
         )
-        await state.set_state(KandinskyStates.TextToImage)
+
+        await state.update_data(
+            generated_image=image_data,
+            prompt=prompt
+        )
+
+        await message.answer(
+            "Нравится результат?",
+            reply_markup=get_review_keyboard()
+        )
+        await state.set_state(KandinskyStates.ReviewImage)
+    except Exception as e:
+        logger.error(f"Error sending image: {e}")
+        await message.answer("⚠️ Ошибка при отправке изображения.")
 
 
 @router.message(F.text == "Отправить администратору", KandinskyStates.ReviewImage)
@@ -244,26 +285,34 @@ async def send_to_admin(message: Message, state: FSMContext, bot: Bot):
     prompt = data.get("prompt", "")
 
     if image_data:
+        # Формируем информацию о пользователе
+        username = f"@{message.from_user.username}" if message.from_user.username else f"ID: {message.from_user.id}"
+        admin_caption = (
+            f"Сгенерировано по запросу: {prompt}\n"
+            f"Пользователь: {username}"
+        )
+
         # Отправляем админам
         for admin_id in settings.admin_ids:
             try:
                 await bot.send_photo(
                     admin_id,
                     BufferedInputFile(image_data, "image.jpg"),
-                    caption=f"Сгенерировано по запросу: {prompt}\n"
-                            f"Пользователь: {message.from_user.id}"
+                    caption=admin_caption
                 )
             except Exception as e:
-                logger.error(f"Error sending to admin: {e}")
+                logger.error(f"Error sending to admin {admin_id}: {e}")
 
+        # Возврат в главное меню
+        from keyboards.on_start import get_on_start_kb
         await message.answer(
             "✅ Изображение отправлено администратору!",
-            reply_markup=get_kandinsky_keyboard()
+            reply_markup=get_on_start_kb()
         )
+        await state.clear()
+        await state.set_state(MainStates.main_menu)
     else:
         await message.answer("⚠️ Ошибка: изображение не найдено.")
-
-    await state.set_state(KandinskyStates.TextToImage)
 
 
 @router.message(F.text == "Назад", KandinskyStates.ReviewImage)

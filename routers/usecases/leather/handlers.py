@@ -5,11 +5,10 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from keyboards.on_start import ButtonText, get_on_start_kb
+from keyboards.on_start import ButtonText
 from routers.common.states import MainStates
-from routers.services.tickets import generate_ticket_number
-from .keyboards import get_leather_kb
 from routers.navigation.back_handler import handle_back_button
+from routers.services.tickets import generate_ticket_number
 from ...navigation.core import NavigationCore
 from ...navigation.state_keyboards import get_keyboard_for_state
 from ...services.notifications import notify_admin
@@ -64,8 +63,17 @@ async def process_leather_order(message: Message, state: FSMContext):
         ticket_number=ticket_number,
         order_type="leather",
         description=message.text,
+        message=message,
     )
 
+    # Возврат в главное меню
+    from keyboards.on_start import get_on_start_kb
+    await message.answer(
+        f"✅ Заказ оформлен!\nНомер: {ticket_number}\n"
+        f"Статус: https://atdart.online/order/{ticket_number}",
+        reply_markup=get_on_start_kb()
+    )
+    await state.clear()
     await state.set_state(MainStates.main_menu)
     await message.answer(
         "Спасибо! Администратор свяжется с вами.",

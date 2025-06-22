@@ -64,8 +64,17 @@ async def process_other_order(message: Message, state: FSMContext):
         ticket_number=ticket_number,
         order_type="other",
         description=message.text,
+        message=message,
     )
 
+    # Возврат в главное меню
+    from keyboards.on_start import get_on_start_kb
+    await message.answer(
+        f"✅ Заказ оформлен!\nНомер: {ticket_number}\n"
+        f"Статус: https://atdart.online/order/{ticket_number}",
+        reply_markup=get_on_start_kb()
+    )
+    await state.clear()
     await state.set_state(MainStates.main_menu)
     await message.answer(
         "Спасибо! Администратор свяжется с вами.",
