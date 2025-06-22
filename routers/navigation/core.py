@@ -12,6 +12,7 @@ class NavigationCore:
         history = data.get("state_history", [])
 
         if not history:
+            await state.clear()
             await state.set_state(MainStates.main_menu)
             await message.answer("Вы в главном меню", reply_markup=get_on_start_kb())
             return None
@@ -25,5 +26,7 @@ class NavigationCore:
     async def add_to_history(state: FSMContext, current_state: str):
         data = await state.get_data()
         history = data.get("state_history", [])
-        history.append(current_state)
-        await state.update_data(state_history=history)
+        # Не добавляем главное меню в историю
+        if current_state != MainStates.main_menu:
+            history.append(current_state)
+            await state.update_data(state_history=history)
