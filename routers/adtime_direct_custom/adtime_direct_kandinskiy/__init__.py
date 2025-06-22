@@ -1,7 +1,7 @@
 from aiogram import Router
 
-from . import photobot
+from . import kandinsky
 
 router = Router()
 
-router.include_router(photobot.router)
+router.include_router(kandinsky.router)

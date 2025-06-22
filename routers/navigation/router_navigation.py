@@ -1,15 +1,6 @@
-from aiogram import Router, F
-from aiogram.filters import StateFilter
-from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram import Router
 
-from keyboards.on_start import get_on_start_kb, ButtonText
-from routers.common.states import MainStates
+from .back_handler import router as back_router
 
 router = Router(name=__name__)
-
-
-@router.message(StateFilter(), F.text == ButtonText.BACK)
-async def handle_back_button(message: Message, state: FSMContext):
-    await state.set_state(MainStates.main_menu)
-    await message.answer("Возвращаемся в главное меню", reply_markup=get_on_start_kb())
+router.include_router(back_router)

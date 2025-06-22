@@ -6,8 +6,6 @@ from pathlib import Path
 # Добавляем корневую директорию проекта в PYTHONPATH
 sys.path.append(str(Path(__file__).parent.parent))
 
-from config import settings
-from routers import main_router as router
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler

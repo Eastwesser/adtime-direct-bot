@@ -5,10 +5,14 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from keyboards.on_start import ButtonText
+from keyboards.on_start import ButtonText, get_on_start_kb
 from routers.common.states import MainStates
 from routers.services.tickets import generate_ticket_number
 from .keyboards import get_other_kb
+from routers.navigation.back_handler import handle_back_button
+from ...navigation.core import NavigationCore
+from ...navigation.state_keyboards import get_keyboard_for_state
+from ...services.notifications import notify_admin
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -16,30 +20,54 @@ logger = logging.getLogger(__name__)
 
 @router.message(StateFilter(MainStates.main_menu), F.text == ButtonText.OTHERCASE)
 async def handle_other(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-    logger.info(f"OTHER pressed. Current state: {current_state}")
+    # Сохраняем текущее состояние в историю
+    await NavigationCore.add_to_history(state, await state.get_state())
 
-    if current_state != MainStates.main_menu:
-        await message.answer("Пожалуйста, вернитесь в главное меню (/start)")
-        return
-
-    logger.info(f"Handling other button, current state: {await state.get_state()}")
+    # Переходим в новое состояние
     await state.set_state(MainStates.other)
     await message.answer(
-        text="Что бы вы хотели заказать? Можете прислать фото или описать текстом.\n"
-             "Если возникли трудности, можете воспользоваться нашим ботом для вдохновения /start_kandinsky",
-        reply_markup=get_other_kb()
+        "Что именно вы хотели бы заказать? "
+        "Опишите или отправьте фото.\n"
+        "Для вдохновения используйте /start_kandinsky",
+        reply_markup=get_keyboard_for_state(MainStates.other)
     )
 
 
 @router.message(MainStates.other)
 async def process_other_order(message: Message, state: FSMContext):
-    # Здесь логика обработки заказа
+    if message.text == ButtonText.BACK:
+        return await handle_back_button(message, state)
+
+    # Если это фото с текстом - пропускаем (обрабатывается медиа-хендлером)
+    if message.photo and message.caption:
+        return
+
     ticket_number = generate_ticket_number()
-    await message.answer(
-        f"Отлично! Ваш номер заявки: {ticket_number}\n"
-        f"Вы можете отслеживать статус на сайте: https://atdart.online/order/{ticket_number}"
+
+    # Сохраняем данные заказа
+    await state.update_data(
+        ticket_number=ticket_number,
+        order_type="other",
+        description=message.text
     )
-    await state.update_data(ticket_number=ticket_number)
-    await message.answer("Отлично, наш администратор свяжется с вами в ближайшее время!")
+
+    await message.answer(
+        f"✅ Заказ оформлен!\n"
+        f"Номер: {ticket_number}\n"
+        f"Статус: https://atdart.online/order/{ticket_number}"
+    )
+
+    # Здесь должна быть отправка данных админу
+    await notify_admin(
+        bot=message.bot,
+        user_id=message.from_user.id,
+        ticket_number=ticket_number,
+        order_type="other",
+        description=message.text,
+    )
+
     await state.set_state(MainStates.main_menu)
+    await message.answer(
+        "Спасибо! Администратор свяжется с вами.",
+        reply_markup=get_on_start_kb()
+    )

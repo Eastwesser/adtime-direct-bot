@@ -1,39 +1,42 @@
-from aiogram import Router, F, types
+from aiogram import Router, F, Bot
+from aiogram.fsm.context import FSMContext
+from aiogram.types import Message
+
+from config import settings
+from routers.common.states import MainStates
+from routers.services.tickets import generate_ticket_number
 
 router = Router(name=__name__)
 
-any_media_filter = F.photo | F.video | F.document
 
+@router.message(F.photo & F.caption)
+async def handle_photo_with_caption(message: Message, state: FSMContext, bot: Bot):
+    # Получаем информацию о фото
+    photo = message.photo[-1]
+    caption = message.caption
 
-# TODO: нужно реализовать функционал, чтобы бот подхватывал картинку и хранил её где-то, а не дропал
-@router.message(F.photo, ~F.caption)
-async def handle_photo_wo_caption(message: types.Message):
-    caption = "I can't see, sorry. Could you describe it please?"
-    await message.reply_photo(
-        photo=message.photo[-1].file_id,
-        caption=caption,
+    # Генерируем номер заявки
+    ticket_number = generate_ticket_number()
+
+    # Отправляем админам
+    for admin_id in settings.admin_ids:
+        try:
+            await bot.send_photo(
+                admin_id,
+                photo.file_id,
+                caption=f"📸 Новый заказ с фото!\n"
+                        f"Номер: {ticket_number}\n"
+                        f"Описание: {caption}\n"
+                        f"От: @{message.from_user.username}"
+            )
+        except Exception as e:
+            print(f"Error sending to admin: {e}")
+
+    # Ответ пользователю
+    await message.answer(
+        f"✅ Фото с описанием принято!\n"
+        f"Номер заявки: {ticket_number}"
     )
 
-
-@router.message(F.photo, F.caption.contains("please"))
-async def handle_photo_with_please_caption(message: types.Message):
-    await message.reply("Don't beg me. I can't see, sorry :C")
-
-
-@router.message(any_media_filter, ~F.caption)
-async def handle_any_media_wo_caption(message: types.Message):
-    if message.document:
-        await message.reply_document(
-            document=message.document.file_id,
-        )
-    elif message.video:
-        await message.reply_video(
-            video=message.video.file_id,
-        )
-    else:
-        await message.reply("I can't see.")
-
-
-@router.message(any_media_filter, F.caption)
-async def handle_any_media_w_caption(message: types.Message):
-    await message.reply(f"Something is on media. Your text: {message.caption!r}")
+    # Возвращаем в главное меню
+    await state.set_state(MainStates.main_menu)
