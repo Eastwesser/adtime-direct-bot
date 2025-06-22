@@ -3,11 +3,13 @@ FROM python:3.10-slim
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY packages/ /tmp/packages/
+
+RUN pip install --no-cache-dir \
+    --find-links=/tmp/packages/ \
+    --retries 5 \
+    -r requirements.txt
 
 COPY . .
-
-# Копируем SSL сертификаты (если используем свои)
-# COPY ssl/ /etc/ssl/
 
 CMD ["python", "webhook-server/webhook.py"]

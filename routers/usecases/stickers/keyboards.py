@@ -1,4 +1,7 @@
+from aiogram import Router
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
+router = Router()  # Создаем роутер
 
 
 def get_stickers_kb():
@@ -9,3 +12,6 @@ def get_stickers_kb():
         ],
         resize_keyboard=True
     )
+
+
+__all__ = ['router', 'get_stickers_kb']  # Явно указываем экспортируемые объекты

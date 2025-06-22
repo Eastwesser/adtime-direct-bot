@@ -15,8 +15,8 @@ To install the necessary dependencies, here are the required libraries:
 aiogram==3.5.0
 python-dotenv==1.0.1
 pydantic-settings==2.2.1
-aiohttp==3.9.5
-requests==2.31.0
+aiohttp~=3.9.0
+requests==2.32.4
 psutil==5.9.8
 ```
 ## .env Sample

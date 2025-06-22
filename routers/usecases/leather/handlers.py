@@ -4,8 +4,8 @@ from aiogram.types import Message
 
 from keyboards.on_start import ButtonText
 from .keyboards import get_leather_kb
-from ..common.states import MainStates
-from ..services.tickets import generate_ticket_number
+from routers.common.states import MainStates
+from routers.services.tickets import generate_ticket_number
 
 router = Router()
 

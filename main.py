@@ -5,9 +5,10 @@ import psutil
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from pydantic import types
 
 from config import settings
-from routers import router as main_router
+from routers import main_router
 from routers.middlewares.user_logging import UserLoggingMiddleware
 
 logging.basicConfig(
@@ -36,6 +37,9 @@ async def main():
     await dp.start_polling(bot)
     log_memory_usage()
 
+@dp.update()
+async def log_unhandled(update: types.Update):
+    logger.warning(f"Unhandled update: {update}")
 
 if __name__ == '__main__':
     try:

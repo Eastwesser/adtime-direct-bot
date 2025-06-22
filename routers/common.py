@@ -48,3 +48,8 @@ async def echo_message(message: types.Message):
 
     except TypeError:
         await message.reply(text="Something new!!! Thanks 🙂")
+
+
+@router.message()
+async def handle_unknown(message: types.Message):
+    await message.answer("Извините, я не понял ваше сообщение. Пожалуйста, используйте кнопки меню.")

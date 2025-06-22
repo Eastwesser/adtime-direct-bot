@@ -5,7 +5,7 @@ from aiogram.types import Message
 from keyboards.on_start import get_on_start_kb
 from ..common.states import MainStates
 
-router = Router()
+router = Router(name=__name__)
 
 
 @router.message(F.text == "Назад")

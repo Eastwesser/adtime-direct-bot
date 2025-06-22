@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: adtime-bot
+    restart: always
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - WEBHOOK_DOMAIN=${WEBHOOK_DOMAIN}
+      - WEBHOOK_PORT=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - ./data:/data
+
+  nginx:
+    image: nginx:latest
+    container_name: adtime-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/letsencrypt
+    depends_on:
+      - bot

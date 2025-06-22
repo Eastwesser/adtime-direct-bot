@@ -3,25 +3,25 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from keyboards.on_start import ButtonText
-from .keyboards import get_typography_kb
-from ..common.states import MainStates
-from ..services.tickets import generate_ticket_number
+from .keyboards import get_other_kb
+from routers.common.states import MainStates
+from routers.services.tickets import generate_ticket_number
 
 router = Router()
 
 
-@router.message(F.text == ButtonText.TYPOGRAPHY, MainStates.main_menu)
-async def handle_typography(message: Message, state: FSMContext):
-    await state.set_state(MainStates.typography)
+@router.message(F.text == ButtonText.OTHERCASE, MainStates.main_menu)
+async def handle_other(message: Message, state: FSMContext):
+    await state.set_state(MainStates.other)
     await message.answer(
-        text="Какие открытки вы бы хотели заказать? Можете прислать фото или описать текстом.\n"
+        text="Что бы вы хотели заказать? Можете прислать фото или описать текстом.\n"
              "Если возникли трудности, можете воспользоваться нашим ботом для вдохновения /start_kandinsky",
-        reply_markup=get_typography_kb()
+        reply_markup=get_other_kb()
     )
 
 
-@router.message(MainStates.typography)
-async def process_typography_order(message: Message, state: FSMContext):
+@router.message(MainStates.other)
+async def process_other_order(message: Message, state: FSMContext):
     # Здесь логика обработки заказа
     ticket_number = generate_ticket_number()
     await message.answer(
