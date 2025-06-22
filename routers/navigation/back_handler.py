@@ -17,9 +17,18 @@ async def handle_back_button(message: Message, state: FSMContext):
     data = await state.get_data()
     history = data.get("state_history", [])
 
+    # Если уже в главном меню - просто выводим сообщение
     if current_state == MainStates.main_menu:
         await message.answer("Вы уже в главном меню")
         return
+
+    # Полностью очищаем историю состояний
+    await state.clear()
+
+    # Устанавливаем главное меню
+    await state.set_state(MainStates.main_menu)
+    from keyboards.on_start import get_on_start_kb
+    await message.answer("Вы в главном меню", reply_markup=get_on_start_kb())
 
     if history:
         previous_state = history.pop()

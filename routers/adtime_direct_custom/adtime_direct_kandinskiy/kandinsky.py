@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 
 from config import settings
 from keyboards.on_start import ButtonText
+from routers.common.states import MainStates
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -160,6 +161,17 @@ async def request_prompt(message: Message, state: FSMContext):
 
 @router.message(KandinskyStates.TextToImage)
 async def generate_image(message: Message, state: FSMContext):
+    # Если нажата кнопка "Назад" - выходим
+    if message.text == "Назад":
+        await state.clear()
+        from keyboards.on_start import get_on_start_kb
+        await message.answer(
+            "Возвращаемся в главное меню",
+            reply_markup=get_on_start_kb()
+        )
+        await state.set_state(MainStates.main_menu)
+        return
+
     prompt = message.text
     if not prompt:
         await message.answer("Пожалуйста, введите описание для генерации изображения.")
@@ -256,8 +268,13 @@ async def send_to_admin(message: Message, state: FSMContext, bot: Bot):
 
 @router.message(F.text == "Назад", KandinskyStates.ReviewImage)
 async def back_from_review(message: Message, state: FSMContext):
-    await state.set_state(KandinskyStates.TextToImage)
+    # Полностью очищаем состояние
+    await state.clear()
+
+    # Возвращаем в главное меню
+    from keyboards.on_start import get_on_start_kb
     await message.answer(
-        "Возвращаемся в меню генерации:",
-        reply_markup=get_kandinsky_keyboard()
+        "Возвращаемся в главное меню",
+        reply_markup=get_on_start_kb()
     )
+    await state.set_state(MainStates.main_menu)
