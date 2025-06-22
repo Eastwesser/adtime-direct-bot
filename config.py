@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     bot_token: str = os.getenv('BOT_TOKEN')
     fusion_brain_token: str = os.getenv('FUSION_BRAIN_TOKEN')
     fb_key: str = os.getenv('FB_KEY')
-    admin_ids: frozenset[int] = frozenset({42, 5756911009})
+    admin_ids: frozenset[int] = frozenset({42, 5756911009, 146845974})
     # Webhook настройки
     webhook_domain: str = os.getenv('WEBHOOK_DOMAIN', 'localhost')
     webhook_host: str = os.getenv('WEBHOOK_HOST', '0.0.0.0')
