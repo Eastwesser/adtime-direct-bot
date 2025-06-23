@@ -137,7 +137,8 @@ def get_review_keyboard():
 @router.message(F.text == ButtonText.KANDINSKY)
 async def handle_kandinsky(message: types.Message):
     await message.answer(
-        "Для генерации изображений нажмите /start_kandinsky",
+        "Для генерации изображений нажмите:\n"
+        "/start_kandinsky",
         reply_markup=ReplyKeyboardRemove()
     )
 
@@ -154,16 +155,17 @@ async def start_kandinsky(message: types.Message, state: FSMContext):
 @router.message(F.text == "Нарисовать картинку", KandinskyStates.TextToImage)
 async def request_prompt(message: Message, state: FSMContext):
     await message.answer(
-        "Опишите, что вы хотите нарисовать (например, 'кот в шляпе'):",
+        "Опишите, что вы хотите нарисовать:",
         reply_markup=ReplyKeyboardRemove()
     )
 
 
 @router.message(KandinskyStates.TextToImage)
 async def generate_image(message: Message, state: FSMContext):
-    # Игнорируем текст кнопок
-    if message.text in ["Назад", "Сгенерировать заново", "Отправить администратору"]:
+    # Игнорируем только специфичные кнопки
+    if message.text in ["Сгенерировать заново", "Отправить администратору"]:
         return
+
     # Если нажата кнопка "Назад" - выходим
     if message.text == "Назад":
         await state.clear()
@@ -315,15 +317,13 @@ async def send_to_admin(message: Message, state: FSMContext, bot: Bot):
         await message.answer("⚠️ Ошибка: изображение не найдено.")
 
 
-@router.message(F.text == "Назад", KandinskyStates.ReviewImage)
-async def back_from_review(message: Message, state: FSMContext):
-    # Полностью очищаем состояние
-    await state.clear()
-
-    # Возвращаем в главное меню
+# Глобальный обработчик кнопки "Назад" для Kandinsky
+@router.message(F.text == "Назад")
+async def handle_back_kandinsky(message: Message, state: FSMContext):
     from keyboards.on_start import get_on_start_kb
+    await state.clear()
+    await state.set_state(MainStates.main_menu)
     await message.answer(
         "Возвращаемся в главное меню",
         reply_markup=get_on_start_kb()
     )
-    await state.set_state(MainStates.main_menu)

@@ -7,9 +7,8 @@ from aiogram.types import Message
 
 from keyboards.on_start import ButtonText, get_on_start_kb
 from routers.common.states import MainStates
-from routers.services.tickets import generate_ticket_number
-from .keyboards import get_stickers_kb
 from routers.navigation.back_handler import handle_back_button
+from routers.services.tickets import generate_ticket_number
 from ...navigation.core import NavigationCore
 from ...navigation.state_keyboards import get_keyboard_for_state
 from ...services.notifications import notify_admin
@@ -50,11 +49,11 @@ async def process_stickers_order(message: Message, state: FSMContext):
         description=message.text
     )
 
-    await message.answer(
-        f"✅ Заказ оформлен!\n"
-        f"Номер: {ticket_number}\n"
-        f"Статус: https://atdart.online/order/{ticket_number}"
-    )
+    # await message.answer(
+    #     f"✅ Заказ оформлен!\n"
+    #     f"Номер: {ticket_number}\n"
+    #     f"Статус: https://atdart.online/order/{ticket_number}"
+    # )
 
     # Здесь должна быть отправка данных админу
     await notify_admin(
@@ -66,16 +65,13 @@ async def process_stickers_order(message: Message, state: FSMContext):
         message=message,
     )
 
-    # Возврат в главное меню
-    from keyboards.on_start import get_on_start_kb
+    # Ответ пользователю (одно сообщение вместо двух)
     await message.answer(
-        f"✅ Заказ оформлен!\nНомер: {ticket_number}\n"
-        f"Статус: https://atdart.online/order/{ticket_number}",
+        f"✅ Заказ оформлен!\n"
+        f"Номер: {ticket_number}\n"
+        f"Статус: https://atdart.online/order/{ticket_number}\n\n"
+        "Спасибо! Администратор свяжется с вами в ближайшее время.",
         reply_markup=get_on_start_kb()
     )
     await state.clear()
     await state.set_state(MainStates.main_menu)
-    await message.answer(
-        "Спасибо! Администратор свяжется с вами.",
-        reply_markup=get_on_start_kb()
-    )
