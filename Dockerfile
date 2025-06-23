@@ -2,14 +2,20 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# Установка зависимостей
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копируем зависимости отдельно для кэширования
 COPY requirements.txt .
-COPY packages/ /tmp/packages/
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir \
-    --find-links=/tmp/packages/ \
-    --retries 5 \
-    -r requirements.txt
-
+# Копируем исходный код
 COPY . .
 
-CMD ["python", "webhook-server/webhook.py"]
+# Создаем директории для данных
+RUN mkdir -p /app/data /app/logs
+
+CMD ["python", "main.py"]

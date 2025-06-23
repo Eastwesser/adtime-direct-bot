@@ -27,7 +27,8 @@ async def handle_other(message: Message, state: FSMContext):
     await message.answer(
         "Что именно вы хотели бы заказать? "
         "Опишите или отправьте фото.\n"
-        "Для вдохновения используйте /start_kandinsky",
+        "Для вдохновения используйте команду\n"
+        "/start_kandinsky",
         reply_markup=get_keyboard_for_state(MainStates.other)
     )
 

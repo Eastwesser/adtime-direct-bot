@@ -26,7 +26,8 @@ async def handle_stickers(message: Message, state: FSMContext):
     await state.set_state(MainStates.stickers)
     await message.answer(
         "Какие наклейки вам нужны? Опишите или отправьте пример.\n"
-        "Для вдохновения используйте /start_kandinsky",
+        "Для вдохновения используйте команду\n"
+        "/start_kandinsky",
         reply_markup=get_keyboard_for_state(MainStates.stickers)
     )
 

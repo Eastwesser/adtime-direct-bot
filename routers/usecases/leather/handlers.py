@@ -27,7 +27,8 @@ async def handle_leather(message: Message, state: FSMContext):
     await message.answer(
         "Какие изделия из кожи вы бы хотели заказать? "
         "Можете прислать фото или описать текстом.\n"
-        "Для вдохновения используйте /start_kandinsky",
+        "Для вдохновения используйте команду\n"
+        "/start_kandinsky",
         reply_markup=get_keyboard_for_state(MainStates.leather)
     )
 
