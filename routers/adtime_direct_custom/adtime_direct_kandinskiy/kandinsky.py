@@ -46,7 +46,7 @@ class Text2ImageAPI:
             response = requests.get(
                 f"{self.API_URL}key/api/v1/pipelines",
                 headers=self.HEADERS,
-                timeout=10
+                timeout=30
             )
             response.raise_for_status()
             data = response.json()
@@ -136,11 +136,20 @@ def get_review_keyboard():
 
 @router.message(F.text == ButtonText.KANDINSKY)
 async def handle_kandinsky(message: types.Message):
-    await message.answer(
-        "Для генерации изображений нажмите:\n"
-        "/start_kandinsky",
-        reply_markup=ReplyKeyboardRemove()
-    )
+    try:
+        test_response = requests.get(
+            "https://api-key.fusionbrain.ai/key/api/v1/pipelines",
+            timeout=5
+        )
+        if test_response.status_code == 200:
+            await message.answer("Для генерации изображений нажмите: /start_kandinsky")
+        else:
+            raise Exception("API недоступен")
+    except Exception as e:
+        await message.answer(
+            "⚠️ Сервис генерации изображений временно недоступен\n"
+            "Попробуйте позже или обратитесь к администратору"
+        )
 
 
 @router.message(Command("start_kandinsky"))
