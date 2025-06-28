@@ -27,6 +27,10 @@ load_dotenv()
 FUSION_BRAIN_TOKEN = os.getenv('FUSION_BRAIN_TOKEN')
 FB_KEY = os.getenv('FB_KEY')
 
+# Добавляем логирование загруженных переменных
+logger.info(f"FUSION_BRAIN_TOKEN loaded: {FUSION_BRAIN_TOKEN is not None}")
+logger.info(f"FB_KEY loaded: {FB_KEY is not None}")
+
 
 class KandinskyStates(StatesGroup):
     TextToImage = State()
@@ -40,23 +44,40 @@ class Text2ImageAPI:
             'X-Key': f'Key {api_key}',
             'X-Secret': f'Secret {secret_key}',
         }
+        logger.info(f"Initialized Text2ImageAPI with URL: {self.API_URL}")
 
     def get_pipeline(self):
         try:
+            logger.info("Trying to get pipeline...")
             response = requests.get(
                 f"{self.API_URL}key/api/v1/pipelines",
                 headers=self.HEADERS,
-                timeout=30
+                timeout=(10, 30)  # Таймаут на подключение и чтение
             )
+
+            # Детальное логирование ответа
+            logger.info(f"Response status: {response.status_code}")
+            logger.info(f"Response headers: {response.headers}")
+
             response.raise_for_status()
             data = response.json()
             logger.info(f"Pipelines response: {data}")
+
             if not data:
                 logger.error("No pipelines available")
                 return None
+
             return data[0]['id']
+
+        except requests.exceptions.RequestException as e:
+            # Детальное логирование ошибок requests
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"HTTP Error {e.response.status_code}: {e.response.text}")
+            else:
+                logger.error(f"Connection error: {str(e)}")
+            return None
         except Exception as e:
-            logger.error(f"Error getting pipeline: {e}")
+            logger.error(f"Unexpected error in get_pipeline: {str(e)}", exc_info=True)
             return None
 
     def generate(self, prompt, pipeline, images=1, width=1024, height=1024):
@@ -76,40 +97,74 @@ class Text2ImageAPI:
         }
 
         try:
+            logger.info(f"Generating image with prompt: {prompt}")
             response = requests.post(
                 f"{self.API_URL}key/api/v1/pipeline/run",
                 headers=self.HEADERS,
-                files=data
+                files=data,
+                timeout=(10, 30),
             )
+
+            # Детальное логирование ответа
+            logger.info(f"Generate response status: {response.status_code}")
+
             response.raise_for_status()
             data = response.json()
-            logger.info(f"Generate response: {data}")
+            logger.info(f"Generate response data: {data}")
             return data['uuid']
+
+        except requests.exceptions.RequestException as e:
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"HTTP Error {e.response.status_code}: {e.response.text}")
+            else:
+                logger.error(f"Connection error: {str(e)}")
+            return None
         except Exception as e:
-            logger.error(f"Error generating image: {e}")
+            logger.error(f"Unexpected error in generate: {str(e)}", exc_info=True)
             return None
 
-    def check_status(self, request_id, attempts=10, delay=10):
+    def check_status(self, request_id, attempts=10, delay=3):  # Уменьшили delay с 10 до 3 сек
         while attempts > 0:
             try:
+                logger.info(f"Checking status for request {request_id} (attempts left: {attempts})")
+
                 response = requests.get(
                     f"{self.API_URL}key/api/v1/pipeline/status/{request_id}",
-                    headers=self.HEADERS
+                    headers=self.HEADERS,
+                    timeout=(3, 5),  # Таймаут подключения и чтения
                 )
+
+                # Детальное логирование ответа
+                logger.info(f"Status check response: {response.status_code}")
+                logger.debug(f"Status headers: {response.headers}")
+
                 data = response.json()
-                logger.info(f"Status check: {data}")
+                logger.info(f"Status data: {data}")
 
                 if data['status'] == 'DONE':
+                    logger.info("Generation completed successfully")
                     return data['result']['files'][0]
                 elif data['status'] == 'FAIL':
-                    logger.error(f"Generation failed: {data.get('errorDescription')}")
+                    error_desc = data.get('errorDescription', 'No error description')
+                    logger.error(f"Generation failed: {error_desc}")
                     return None
 
                 attempts -= 1
                 time.sleep(delay)
+
+            except requests.exceptions.RequestException as e:
+                if hasattr(e, 'response') and e.response is not None:
+                    logger.error(f"HTTP Error {e.response.status_code}: {e.response.text}")
+                else:
+                    logger.error(f"Connection error: {str(e)}")
+                attempts -= 1
+                time.sleep(delay)
             except Exception as e:
-                logger.error(f"Error checking status: {e}")
-                return None
+                logger.error(f"Unexpected error in check_status: {str(e)}", exc_info=True)
+                attempts -= 1
+                time.sleep(delay)
+
+        logger.error("All attempts to check status failed")
         return None
 
 
@@ -137,15 +192,25 @@ def get_review_keyboard():
 @router.message(F.text == ButtonText.KANDINSKY)
 async def handle_kandinsky(message: types.Message):
     try:
+        logger.info("Checking Kandinsky API availability...")
         test_response = requests.get(
             "https://api-key.fusionbrain.ai/key/api/v1/pipelines",
-            timeout=5
+            headers={
+                'X-Key': f'Key {FUSION_BRAIN_TOKEN}',
+                'X-Secret': f'Secret {FB_KEY}',
+            },
+            timeout=10,
         )
+        logger.info(f"API check response: {test_response.status_code}")
         if test_response.status_code == 200:
+            logger.info("Kandinsky API is available")
             await message.answer("Для генерации изображений нажмите: /start_kandinsky")
         else:
-            raise Exception("API недоступен")
+            error_msg = f"API недоступен, статус: {test_response.status_code}"
+            logger.error(error_msg)
+            raise Exception(error_msg)
     except Exception as e:
+        logger.error(f"Error checking Kandinsky API: {str(e)}", exc_info=True)
         await message.answer(
             "⚠️ Сервис генерации изображений временно недоступен\n"
             "Попробуйте позже или обратитесь к администратору"

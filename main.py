@@ -6,10 +6,12 @@ import psutil
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-
+import certifi
 from config import settings
 from routers import main_router
 from routers.middlewares.user_logging import UserLoggingMiddleware
+
+print(certifi.where())
 
 # Добавляем корень проекта в PYTHONPATH
 sys.path.append(str(Path(__file__).parent))
